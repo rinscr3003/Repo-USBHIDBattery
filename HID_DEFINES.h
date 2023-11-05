@@ -1,3 +1,6 @@
+#ifndef __USBHIDDEF_H__
+#define __USBHIDDEF_H__
+
 // HID Request Type HID1.11 Page 51 7.2.1 Get_Report Request
 #define HID_REPORT_TYPE_INPUT 1
 #define HID_REPORT_TYPE_OUTPUT 2
@@ -53,3 +56,5 @@
 #define PRESENTSTATUS_SHUTDOWNIMNT 0x0B
 #define PRESENTSTATUS_COMMLOST 0x0C
 #define PRESENTSTATUS_OVERLOAD 0x0D
+
+#endif

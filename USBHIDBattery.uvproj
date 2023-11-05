@@ -391,6 +391,11 @@
               <FileType>5</FileType>
               <FilePath>.\HID_DEFINES.h</FilePath>
             </File>
+            <File>
+              <FileName>USBDesc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\USBDesc.h</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

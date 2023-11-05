@@ -6,11 +6,8 @@
 #include "HID_DEFINES.h"
 
 #define THIS_ENDP0_SIZE 64
-#define ENDP2_IN_SIZE 64
-#define ENDP2_OUT_SIZE 64
 
-UINT8X Ep0Buffer[MIN(64, THIS_ENDP0_SIZE + 2)] _at_ 0x0000;                                                   // ¶Ëµã0 OUT&IN»º³åÇø£¬±ØÐëÊÇÅ¼µØÖ·
-UINT8X Ep2Buffer[MIN(64, ENDP2_IN_SIZE + 2) + MIN(64, ENDP2_OUT_SIZE + 2)] _at_ MIN(64, THIS_ENDP0_SIZE + 2); // ¶Ëµã2 IN&OUT»º³åÇø,±ØÐëÊÇÅ¼µØÖ·
+UINT8X Ep0Buffer[MIN(64, THIS_ENDP0_SIZE + 2)] _at_ 0x0000; // ¶Ëµã0 OUT&IN»º³åÇø£¬±ØÐëÊÇÅ¼µØÖ·
 
 UINT8 SetupReq, Ready, Count, FLAG, UsbConfig;
 UINT16 SetupLen;
@@ -19,271 +16,10 @@ USB_SETUP_REQ SetupReqBuf; // ÔÝ´æSetup°ü
 #define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer)
 
 #pragma NOAREGS
-/*Éè±¸ÃèÊö·û*/
-UINT8C DevDesc[18] = {
-    0x12,            // ÃèÊö·û´óÐ¡
-    0x01,            // ÃèÊö·ûÀàÐÍ
-    0x10, 0x01,      // USB¹æ·¶°æ±¾ºÅ£¨USB1.1£©
-    0x00,            // Éè±¸Àà£¨HIDÉè±¸´ËÈýÏîÈ«0£©
-    0x00,            // Éè±¸×ÓÀà
-    0x00,            // Éè±¸Ð­Òé
-    THIS_ENDP0_SIZE, // EP0´óÐ¡
-    0xb2, 0x38,      // VID
-    0x01, 0x80,      // PID
-    0x01, 0x00,      // Éè±¸°æ±¾ºÅ
-    IMANUFACTURER,   // ÖÆÔìÉÌ×Ö·û´®ÃèÊö·ûË÷Òý
-    IPRODUCT,        // ²úÆ·×Ö·û´®ÃèÊö·ûË÷Òý
-    ISERIAL,         // ÐòÁÐºÅ²úÆ·×Ö·û´®ÃèÊö·ûË÷Òý
-    0x01             // ÅäÖÃÊýÄ¿
-};
 
-UINT8C CfgDesc[] =
-    {
-        // ÅäÖÃÃèÊö·û
-        0x09,       // ÃèÊö·û´óÐ¡
-        0x02,       // ÃèÊö·ûÀàÐÍ£¨ÊÇÅäÖÃÃèÊö·û£©
-        0x29, 0x00, // ÅäÖÃ×Ü³¤¶È
-        0x01,       // ÅäÖÃ½Ó¿ÚÊý
-        0x01,       // ÅäÖÃÖµ
-        0x00,       // ÅäÖÃ×Ö·û´®ÃèÊö·ûË÷Òý
-        0xA0,       // »ú¹©£¬»½ÐÑ
-        0x32,       // ÇëÇó100mA
+#include "USBDesc.h"
 
-        // ½Ó¿ÚÃèÊö·û
-        0x09, // ÃèÊö·û´óÐ¡
-        0x04, // ÃèÊö·ûÀàÐÍ£¨ÊÇ½Ó¿ÚÃèÊö·û£©
-        0x00, // ½Ó¿Ú±àºÅ
-        0x00, // ½Ó¿ÚÌæÓÃÉèÖÃ£¨£¿£©
-        0x02, // ¿Û³ý¶Ëµã0ºóµÄ¶ËµãÊý
-        0x03, // ½Ó¿ÚÀà£¨ÊÇHID£©
-        0x00, // ½Ó¿Ú×ÓÀà£¨ÊÇ²»Ö§³ÖÒýµ¼·þÎñµÄ£©
-        0x00, // ²»Ö§³ÖÒýµ¼·þÎñ£¬´ËÏîÎÞÐ§
-        0x00, // ½Ó¿Ú×Ö·û´®ÃèÊö·ûË÷Òý
-
-        // HIDÀàÃèÊö·û
-        0x09,       // ÃèÊö·û´óÐ¡
-        0x21,       // ÃèÊö·ûÀàÐÍ£¨ÊÇHIDÀàÃèÊö·û£©
-        0x00, 0x01, // HID°æ±¾£¨ÊÇ1.0£©
-        0x00,       // ¹ú¼Ò´úÂë
-        0x01,       // ÏÂ¹ÒHIDÃèÊö·ûÊýÁ¿
-        0x22,       // ÏÂ¹ÒÃèÊö·û1ÀàÐÍ£¨ÊÇ±¨±íÃèÊö·û£©
-        0x20, 0x01, // ÏÂ¹ÒÃèÊö·û1³¤¶È
-
-        // ¶ËµãÃèÊö·û
-        0x07,                // ÃèÊö·û´óÐ¡
-        0x05,                // ÃèÊö·ûÀàÐÍ£¨ÊÇ¶ËµãÃèÊö·û£©
-        0x82,                // ¶ËµãºÅ¼°ÊäÈëÊä³öÐÅÏ¢£¨ÊÇEP2IN£©
-        0x03,                // ¶Ëµã´«ÊäÀàÐÍ£¨ÊÇÖÐ¶Ï´«Êä£©
-        ENDP2_IN_SIZE, 0x00, // ¶Ëµã´óÐ¡
-        0xFF,                // ¶ËµãÂÖÑ¯¼ä¸ô£¨ÊÇ255Ö¡£©
-
-        // ¶ËµãÃèÊö·û
-        0x07,                 // ÃèÊö·û´óÐ¡
-        0x05,                 // ÃèÊö·ûÀàÐÍ£¨ÊÇ¶ËµãÃèÊö·û£©
-        0x02,                 // ¶ËµãºÅ¼°ÊäÈëÊä³öÐÅÏ¢£¨ÊÇEP2OUT£©
-        0x03,                 // ¶Ëµã´«ÊäÀàÐÍ£¨ÊÇÖÐ¶Ï´«Êä£©
-        ENDP2_OUT_SIZE, 0x00, // ¶Ëµã´óÐ¡
-        0xFF                  // ¶ËµãÂÖÑ¯¼ä¸ô£¨ÊÇ255Ö¡£©
-};
-/*×Ö·û´®ÃèÊö·û*/
-UINT8C LangDes[] = {
-    // ÓïÑÔÃèÊö·û
-    0x04,      // ÃèÊö·û´óÐ¡
-    0x03,      // ÃèÊö·ûÀàÐÍ£¨ÊÇ×Ö·û´®ÃèÊö·û£©
-    0x09, 0x04 // ÓïÑÔ±àÂë£¨ÊÇÓ¢Óï£©
-};
-UINT8C StrDes1[] = {
-    // ×Ö·û´®ÃèÊö·û ÖÆÔìÉÌ
-    0x0A,                                      // ÃèÊö·û´óÐ¡
-    0x03,                                      // ÃèÊö·ûÀàÐÍ£¨ÊÇ×Ö·û´®ÃèÊö·û£©
-    'M', 0x00, 'Z', 0x00, 'Y', 0x00, '7', 0x00 // ×Ö·û´®ÄÚÈÝ
-};
-UINT8C StrDes2[] = {
-    // ×Ö·û´®ÃèÊö·û ²úÆ·
-    0x20, // ÃèÊö·û´óÐ¡
-    0x03, // ÃèÊö·ûÀàÐÍ£¨ÊÇ×Ö·û´®ÃèÊö·û£©
-    'U', 0x00, 'S', 0x00, 'B', 0x00, ' ', 0x00, 'H', 0x00, 'I', 0x00, 'D', 0x00, ' ', 0x00,
-    'B', 0x00, 'a', 0x00, 't', 0x00, 't', 0x00, 'e', 0x00, 'r', 0x00, 'y', 0x00 // ×Ö·û´®ÄÚÈÝ
-};
-UINT8C StrDes3[] = {
-    // ×Ö·û´®ÃèÊö·û ÐòÁÐºÅ
-    0x1C, // ÃèÊö·û´óÐ¡
-    0x03, // ÃèÊö·ûÀàÐÍ£¨ÊÇ×Ö·û´®ÃèÊö·û£©
-    'T', 0x00, 'S', 0x00, 'H', 0x00, 'E', 0x00, '-', 0x00,
-    '0', 0x00, '0', 0x00, '1', 0x00, '1', 0x00, '4', 0x00, '5', 0x00, '1', 0x00, '4', 0x00, // ×Ö·û´®ÄÚÈÝ
-};
-UINT8C StrDes4[] = {
-    // ×Ö·û´®ÃèÊö·û HID-»¯Ñ§ÀàÐÍ
-    0x0A,                                      // ÃèÊö·û´óÐ¡
-    0x03,                                      // ÃèÊö·ûÀàÐÍ£¨ÊÇ×Ö·û´®ÃèÊö·û£©
-    'L', 0x00, 'I', 0x00, 'O', 0x00, 'N', 0x00 // ×Ö·û´®ÄÚÈÝ
-};
-
-/*HIDÀà±¨±íÃèÊö·û*/
-UINT8C HIDRepDesc[] = {
-    0x05, 0x84,       // USAGE_PAGE (Power Device)
-    0x09, 0x04,       // USAGE (UPS)
-    0xA1, 0x01,       // COLLECTION (Application)
-    0x09, 0x24,       //   USAGE (Sink)
-    0xA1, 0x02,       //   COLLECTION (Logical)
-    0x75, 0x08,       //     REPORT_SIZE (8)
-    0x95, 0x01,       //     REPORT_COUNT (1)
-    0x15, 0x00,       //     LOGICAL_MINIMUM (0)
-    0x26, 0xFF, 0x00, //     LOGICAL_MAXIMUM (255)
-
-    0x85, HID_PD_IPRODUCT, //     REPORT_ID (1)
-    0x09, 0xFE,            //     USAGE (iProduct)
-    0x79, IPRODUCT,        //     STRING INDEX (2)
-    0xB1, 0x23,            //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_SERIAL, //     REPORT_ID (2)
-    0x09, 0xFF,          //     USAGE (iSerialNumber)
-    0x79, ISERIAL,       //     STRING INDEX (3)
-    0xB1, 0x23,          //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_MANUFACTURER, //     REPORT_ID (3)
-    0x09, 0xFD,                //     USAGE (iManufacturer)
-    0x79, IMANUFACTURER,       //     STRING INDEX (1)
-    0xB1, 0x23,                //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x05, 0x85,                //     USAGE_PAGE (Battery System) ====================
-    0x85, HID_PD_RECHARGEABLE, //     REPORT_ID (6)
-    0x09, 0x8B,                //     USAGE (Rechargable)
-    0xB1, 0x23,                //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_IDEVICECHEMISTRY, //     REPORT_ID (31)
-    0x09, 0x89,                    //     USAGE (iDeviceChemistry)
-    0x79, IDEVICECHEMISTRY,        //     STRING INDEX (4)
-    0xB1, 0x23,                    //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_IOEMINFORMATION, //     REPORT_ID (32)
-    0x09, 0x8F,                   //     USAGE (iOEMInformation)
-    0x79, IOEMVENDOR,             //     STRING INDEX (5)
-    0xB1, 0x23,                   //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_CAPACITYMODE, //     REPORT_ID (22)
-    0x09, 0x2C,                //     USAGE (CapacityMode)
-    0xB1, 0x23,                //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_CPCTYGRANULARITY1, //     REPORT_ID (16)
-    0x09, 0x8D,                     //     USAGE (CapacityGranularity1)
-    0x26, 0x64, 0x00,               //     LOGICAL_MAXIMUM (100)
-    0xB1, 0x22,                     //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_CPCTYGRANULARITY2, //     REPORT_ID (24)
-    0x09, 0x8E,                     //     USAGE (CapacityGranularity2)
-    0xB1, 0x23,                     //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
-
-    0x85, HID_PD_FULLCHRGECAPACITY, //     REPORT_ID (14)
-    0x09, 0x67,                     //     USAGE (FullChargeCapacity)
-    0xB1, 0x83,                     //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_DESIGNCAPACITY, //     REPORT_ID (23)
-    0x09, 0x83,                  //     USAGE (DesignCapacity)
-    0xB1, 0x83,                  //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_REMAININGCAPACITY, //     REPORT_ID (12)
-    0x09, 0x66,                     //     USAGE (RemainingCapacity)
-    0x81, 0xA3,                     //     INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x66,                     //     USAGE (RemainingCapacity)
-    0xB1, 0xA3,                     //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_AVERAGETIME2FULL, //     REPORT_ID (26)
-    0x09, 0x6A,                    //     USAGE (AverageTimeToFull)
-    0x27, 0xFF, 0xFF, 0x00, 0x00,  //     LOGICAL_MAXIMUM (65534)
-    0x66, 0x01, 0x10,              //     UNIT (Seconds)
-    0x55, 0x00,                    //     UNIT_EXPONENT (0)
-    0xB1, 0xA3,                    //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_AVERAGETIME2EMPTY, //     REPORT_ID (28)
-    0x09, 0x69,                     //     USAGE (AverageTimeToEmpty)
-    0x81, 0xA3,                     //     INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x69,                     //     USAGE (AverageTimeToEmpty)
-    0xB1, 0xA3,                     //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_RUNTIMETOEMPTY, //     REPORT_ID (13)
-    0x09, 0x68,                  //     USAGE (RunTimeToEmpty)
-    0x81, 0xA3,                  //     INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x68,                  //     USAGE (RunTimeToEmpty)
-    0xB1, 0xA3,                  //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_VOLTAGE, //     REPORT_ID (11)
-    0x09, 0x30,           //     USAGE (Voltage)
-    0x81, 0xA3,           //     INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x30,           //     USAGE (Voltage)
-    0xB1, 0xA3,           //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_PRESENTSTATUS, //       REPORT_ID (7)
-    0x05, 0x85,                 //       USAGE_PAGE (Battery System) =================
-    0x09, 0x44,                 //       USAGE (Charging)
-    0x75, 0x01,                 //       REPORT_SIZE (1)
-    0x15, 0x00,                 //       LOGICAL_MINIMUM (0)
-    0x25, 0x01,                 //       LOGICAL_MAXIMUM (1)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x44,                 //       USAGE (Charging)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x45,                 //       USAGE (Discharging)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x45,                 //       USAGE (Discharging)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0xD0,                 //       USAGE (ACPresent)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0xD0,                 //       USAGE (ACPresent)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0xD1,                 //       USAGE (BatteryPresent)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0xD1,                 //       USAGE (BatteryPresent)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x42,                 //       USAGE (BelowRemainingCapacityLimit)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x42,                 //       USAGE (BelowRemainingCapacityLimit)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x43,                 //       USAGE (RemainingTimeLimitExpired)
-    0x81, 0xA2,                 //       INPUT (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x43,                 //       USAGE (RemainingTimeLimitExpired)
-    0xB1, 0xA2,                 //       FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x4B,                 //       USAGE (NeedReplacement)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x4B,                 //       USAGE (NeedReplacement)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0xDB,                 //       USAGE (VoltageNotRegulated)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0xDB,                 //       USAGE (VoltageNotRegulated)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x46,                 //       USAGE (FullyCharged)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x46,                 //       USAGE (FullyCharged)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x47,                 //       USAGE (FullyDischarged)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x47,                 //       USAGE (FullyDischarged)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x05, 0x84,                 //       USAGE_PAGE (Power Device) =================
-    0x09, 0x68,                 //       USAGE (ShutdownRequested)
-    0x81, 0xA2,                 //       INPUT (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x68,                 //       USAGE (ShutdownRequested)
-    0xB1, 0xA2,                 //       FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x69,                 //       USAGE (ShutdownImminent)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x69,                 //       USAGE (ShutdownImminent)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x73,                 //       USAGE (CommunicationLost)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x73,                 //       USAGE (CommunicationLost)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x09, 0x65,                 //       USAGE (Overload)
-    0x81, 0xA3,                 //       INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x65,                 //       USAGE (Overload)
-    0xB1, 0xA3,                 //       FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x95, 0x02,                 //       REPORT_COUNT (2)
-    0x81, 0x01,                 //       INPUT (Constant, Array, Absolute)
-    0xB1, 0x01,                 //       FEATURE (Constant, Array, Absolute, No Wrap, Linear, Preferred State, No Null Position, Nonvolatile, Bitfield)
-    0xC0,                       //     END_COLLECTION
-    0xC0                        // END_COLLECTION
-};
-
-UINT8X UserEp2Buf[64]; // ÓÃ»§Êý¾Ý¶¨Òå
-UINT8 Endp2Busy = 0;
+UINT8X UserEpBuf[64] = {0x07, 0x01}; // ÓÃ»§Êý¾Ý¶¨Òå
 
 /*******************************************************************************
  * Function Name  : USBDeviceInit()
@@ -299,9 +35,6 @@ void USBDeviceInit()
     UDEV_CTRL = bUD_PD_DIS;      // ½ûÖ¹DP/DMÏÂÀ­µç×è
     UDEV_CTRL &= ~bUD_LOW_SPEED; // Ñ¡ÔñÈ«ËÙ12MÄ£Ê½£¬Ä¬ÈÏ·½Ê½
     USB_CTRL &= ~bUC_LOW_SPEED;
-    UEP2_DMA = Ep2Buffer;                       // ¶Ëµã2Êý¾Ý´«ÊäµØÖ·
-    UEP2_3_MOD |= bUEP2_TX_EN | bUEP2_RX_EN;    // ¶Ëµã2·¢ËÍ½ÓÊÕÊ¹ÄÜ
-    UEP2_3_MOD &= ~bUEP2_BUF_MOD;               // ¶Ëµã2ÊÕ·¢¸÷64×Ö½Ú»º³åÇø
     UEP0_DMA = Ep0Buffer;                       // ¶Ëµã0Êý¾Ý´«ÊäµØÖ·
     UEP4_1_MOD &= ~(bUEP4_RX_EN | bUEP4_TX_EN); // ¶Ëµã0µ¥64×Ö½ÚÊÕ·¢»º³åÇø
     USB_DEV_AD = 0x00;
@@ -313,50 +46,16 @@ void USBDeviceInit()
 }
 
 /*******************************************************************************
- * Function Name  : Enp2BulkIn()
- * Description    : USBÉè±¸Ä£Ê½¶Ëµã2µÄÅúÁ¿ÉÏ´«
- * Input          : None
- * Output         : None
- * Return         : None
- *******************************************************************************/
-void Enp2BulkIn()
-{
-    memcpy(Ep2Buffer + MAX_PACKET_SIZE, UserEp2Buf, sizeof(UserEp2Buf)); // ¼ÓÔØÉÏ´«Êý¾Ý
-    UEP2_T_LEN = THIS_ENDP0_SIZE;                                        // ÉÏ´«×î´ó°ü³¤¶È
-    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;             // ÓÐÊý¾ÝÊ±ÉÏ´«Êý¾Ý²¢Ó¦´ðACK
-}
-
-/*******************************************************************************
  * Function Name  : DeviceInterrupt()
  * Description    : CH552USBÖÐ¶Ï´¦Àíº¯Êý
  *******************************************************************************/
 void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼Ä´æÆ÷×é1
 {
-    UINT8 i;
     UINT16 len;
     if (UIF_TRANSFER) // USB´«ÊäÍê³É±êÖ¾
     {
         switch (USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP))
         {
-        case UIS_TOKEN_IN | 2:       // endpoint 2# ¶ËµãÅúÁ¿ÉÏ´«
-            UEP2_T_LEN = 0;          // Ô¤Ê¹ÓÃ·¢ËÍ³¤¶ÈÒ»¶¨ÒªÇå¿Õ
-            UEP2_CTRL ^= bUEP_T_TOG; // ÊÖ¶¯·­×ª
-            Endp2Busy = 0;
-            UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK; // Ä¬ÈÏÓ¦´ðNAK
-            break;
-        case UIS_TOKEN_OUT | 2: // endpoint 2# ¶ËµãÅúÁ¿ÏÂ´«
-            if (U_TOG_OK)       // ²»Í¬²½µÄÊý¾Ý°ü½«¶ªÆú
-            {
-                len = USB_RX_LEN;        // ½ÓÊÕÊý¾Ý³¤¶È£¬Êý¾Ý´ÓEp2BufferÊ×µØÖ·¿ªÊ¼´æ·Å
-                UEP2_CTRL ^= bUEP_R_TOG; // ÊÖ¶¯·­×ª
-                for (i = 0; i < len; i++)
-                {
-                    Ep2Buffer[MAX_PACKET_SIZE + i] = Ep2Buffer[i] ^ 0xFF; // OUTÊý¾ÝÈ¡·´µ½INÓÉ¼ÆËã»úÑéÖ¤
-                }
-                UEP2_T_LEN = len;
-                UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK; // ÔÊÐíÉÏ´«
-            }
-            break;
         case UIS_TOKEN_SETUP | 0: // SETUPÊÂÎñ
             UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
             len = USB_RX_LEN;
@@ -370,8 +69,7 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                     switch (SetupReq)
                     {
                     case 0x01: // GetReport
-
-                        pDescr = UserEp2Buf;             // ¿ØÖÆ¶ËµãÉÏ´«Êä¾Ý
+                        pDescr = UserEpBuf;             // ¿ØÖÆ¶ËµãÉÏ´«Êä¾Ý
                         if (SetupLen >= THIS_ENDP0_SIZE) // ´óÓÚ¶Ëµã0´óÐ¡£¬ÐèÒªÌØÊâ´¦Àí
                         {
                             len = THIS_ENDP0_SIZE;
@@ -380,6 +78,7 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                         {
                             len = SetupLen;
                         }
+                        len = 2;
                         break;
                     case 0x02: // GetIdle
                         break;
@@ -488,12 +187,6 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                         {
                             switch (UsbSetupBuf->wIndexL)
                             {
-                            case 0x82:
-                                UEP2_CTRL = UEP2_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
-                                break;
-                            case 0x02:
-                                UEP2_CTRL = UEP2_CTRL & ~(bUEP_R_TOG | MASK_UEP_R_RES) | UEP_R_RES_ACK;
-                                break;
                             default:
                                 len = 0xFF; // ²»Ö§³ÖµÄ¶Ëµã
                                 break;
@@ -529,12 +222,6 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                             {
                                 switch (((UINT16)UsbSetupBuf->wIndexH << 8) | UsbSetupBuf->wIndexL)
                                 {
-                                case 0x82:
-                                    UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL; /* ÉèÖÃ¶Ëµã2 IN STALL */
-                                    break;
-                                case 0x02:
-                                    UEP2_CTRL = UEP2_CTRL & (~bUEP_R_TOG) | UEP_R_RES_STALL; /* ÉèÖÃ¶Ëµã2 OUT Stall */
-                                    break;
                                 default:
                                     len = 0xFF; /* ²Ù×÷Ê§°Ü */
                                     break;
@@ -633,11 +320,9 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
     if (UIF_BUS_RST) // Éè±¸Ä£Ê½USB×ÜÏß¸´Î»ÖÐ¶Ï
     {
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
-        UEP2_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
         USB_DEV_AD = 0x00;
         UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
-        Endp2Busy = 0;
         UIF_BUS_RST = 0; // ÇåÖÐ¶Ï±êÖ¾
     }
     if (UIF_SUSPEND) // USB×ÜÏß¹ÒÆð/»½ÐÑÍê³É
@@ -656,28 +341,17 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
 
 main()
 {
-    UINT8 i;
+    // UINT8 i;
     CfgFsys();
     mDelaymS(5); // ÐÞ¸ÄÖ÷ÆµµÈ´ýÄÚ²¿¾§ÕñÎÈ¶¨,±Ø¼Ó
-    // mInitSTDIO( );                                                        //´®¿Ú0³õÊ¼»¯
-    for (i = 0; i < 64; i++) // ×¼±¸ÑÝÊ¾Êý¾Ý
-    {
-        UserEp2Buf[i] = i;
-    }
     USBDeviceInit(); // USBÉè±¸Ä£Ê½³õÊ¼»¯
     EA = 1;          // ÔÊÐíµ¥Æ¬»úÖÐ¶Ï
-    UEP1_T_LEN = 0;  // Ô¤Ê¹ÓÃ·¢ËÍ³¤¶ÈÒ»¶¨ÒªÇå¿Õ
-    UEP2_T_LEN = 0;  // Ô¤Ê¹ÓÃ·¢ËÍ³¤¶ÈÒ»¶¨ÒªÇå¿Õ
     FLAG = 0;
     Ready = 0;
     while (1)
     {
         if (Ready)
         {
-            while (Endp2Busy)
-                ; // Èç¹ûÃ¦£¨ÉÏÒ»°üÊý¾ÝÃ»ÓÐ´«ÉÏÈ¥£©£¬ÔòµÈ´ý¡£
-            // Endp2Busy = 1; // ÉèÖÃÎªÃ¦×´Ì¬
-            // Enp2BulkIn();
             mDelaymS(100);
         }
         mDelaymS(100); // Ä£Äâµ¥Æ¬»ú×öÆäËüÊÂ
