@@ -67,7 +67,7 @@ UINT8C CfgDesc[] =
         0x00,       // ¹ú¼Ò´úÂë
         0x01,       // ÏÂ¹ÒHIDÃèÊö·ûÊıÁ¿
         0x22,       // ÏÂ¹ÒÃèÊö·û1ÀàĞÍ£¨ÊÇ±¨±íÃèÊö·û£©
-        0x77, 0x01, // ÏÂ¹ÒÃèÊö·û1³¤¶È
+        0x20, 0x01, // ÏÂ¹ÒÃèÊö·û1³¤¶È
 
         // ¶ËµãÃèÊö·û
         0x07,                // ÃèÊö·û´óĞ¡
@@ -75,7 +75,7 @@ UINT8C CfgDesc[] =
         0x82,                // ¶ËµãºÅ¼°ÊäÈëÊä³öĞÅÏ¢£¨ÊÇEP2IN£©
         0x03,                // ¶Ëµã´«ÊäÀàĞÍ£¨ÊÇÖĞ¶Ï´«Êä£©
         ENDP2_IN_SIZE, 0x00, // ¶Ëµã´óĞ¡
-        0x01,                // ¶ËµãÂÖÑ¯¼ä¸ô£¨ÊÇ1Ö¡£©
+        0xFF,                // ¶ËµãÂÖÑ¯¼ä¸ô£¨ÊÇ255Ö¡£©
 
         // ¶ËµãÃèÊö·û
         0x07,                 // ÃèÊö·û´óĞ¡
@@ -83,7 +83,7 @@ UINT8C CfgDesc[] =
         0x02,                 // ¶ËµãºÅ¼°ÊäÈëÊä³öĞÅÏ¢£¨ÊÇEP2OUT£©
         0x03,                 // ¶Ëµã´«ÊäÀàĞÍ£¨ÊÇÖĞ¶Ï´«Êä£©
         ENDP2_OUT_SIZE, 0x00, // ¶Ëµã´óĞ¡
-        0x01                  // ¶ËµãÂÖÑ¯¼ä¸ô£¨ÊÇ1Ö¡£©
+        0xFF                  // ¶ËµãÂÖÑ¯¼ä¸ô£¨ÊÇ255Ö¡£©
 };
 /*×Ö·û´®ÃèÊö·û*/
 UINT8C LangDes[] = {
@@ -188,20 +188,6 @@ UINT8C HIDRepDesc[] = {
     0x09, 0x66,                     //     USAGE (RemainingCapacity)
     0xB1, 0xA3,                     //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
 
-    0x85, HID_PD_WARNCAPACITYLIMIT, //     REPORT_ID (15)
-    0x09, 0x8C,                     //     USAGE (WarningCapacityLimit)
-    0xB1, 0xA2,                     //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_REMNCAPACITYLIMIT, //     REPORT_ID (17)
-    0x09, 0x29,                     //     USAGE (RemainingCapacityLimit)
-    0xB1, 0xA2,                     //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_MANUFACTUREDATE, //     REPORT_ID (9)
-    0x09, 0x85,                   //     USAGE (ManufacturerDate)
-    0x75, 0x10,                   //     REPORT_SIZE (16)
-    0x27, 0xFF, 0xFF, 0x00, 0x00, //     LOGICAL_MAXIMUM (65534)
-    0xB1, 0xA3,                   //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
     0x85, HID_PD_AVERAGETIME2FULL, //     REPORT_ID (26)
     0x09, 0x6A,                    //     USAGE (AverageTimeToFull)
     0x27, 0xFF, 0xFF, 0x00, 0x00,  //     LOGICAL_MAXIMUM (65534)
@@ -220,34 +206,6 @@ UINT8C HIDRepDesc[] = {
     0x81, 0xA3,                  //     INPUT (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
     0x09, 0x68,                  //     USAGE (RunTimeToEmpty)
     0xB1, 0xA3,                  //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_REMAINTIMELIMIT, //     REPORT_ID (8)
-    0x09, 0x2A,                   //     USAGE (RemainingTimeLimit)
-    0x75, 0x10,                   //     REPORT_SIZE (16)
-    0x27, 0x64, 0x05, 0x00, 0x00, //     LOGICAL_MAXIMUM (1380)
-    0x16, 0x78, 0x00,             //     LOGICAL_MINIMUM (120)
-    0x81, 0x22,                   //     INPUT (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x2A,                   //     USAGE (RemainingTimeLimit)
-    0xB1, 0xA2,                   //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-    0x05, 0x84,                   //     USAGE_PAGE (Power Device) ====================
-
-    0x85, HID_PD_DELAYBE4SHUTDOWN, //     REPORT_ID (18)
-    0x09, 0x57,                    //     USAGE (DelayBeforeShutdown)
-    0x16, 0x00, 0x80,              //     LOGICAL_MINIMUM (-32768)
-    0x27, 0xFF, 0x7F, 0x00, 0x00,  //     LOGICAL_MAXIMUM (32767)
-    0xB1, 0xA2,                    //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_DELAYBE4REBOOT, //     REPORT_ID (19)
-    0x09, 0x55,                  //     USAGE (DelayBeforeReboot)
-    0xB1, 0xA2,                  //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_CONFIGVOLTAGE,   //     REPORT_ID (10)
-    0x09, 0x40,                   //     USAGE (ConfigVoltage)
-    0x15, 0x00,                   //     LOGICAL_MINIMUM (0)
-    0x27, 0xFF, 0xFF, 0x00, 0x00, //     LOGICAL_MAXIMUM (65535)
-    0x67, 0x21, 0xD1, 0xF0, 0x00, //     UNIT (Centivolts)
-    0x55, 0x05,                   //     UNIT_EXPONENT (5)
-    0xB1, 0x23,                   //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Nonvolatile, Bitfield)
 
     0x85, HID_PD_VOLTAGE, //     REPORT_ID (11)
     0x09, 0x30,           //     USAGE (Voltage)
@@ -355,13 +313,13 @@ void USBDeviceInit()
 }
 
 /*******************************************************************************
- * Function Name  : Enp2BlukIn()
+ * Function Name  : Enp2BulkIn()
  * Description    : USBÉè±¸Ä£Ê½¶Ëµã2µÄÅúÁ¿ÉÏ´«
  * Input          : None
  * Output         : None
  * Return         : None
  *******************************************************************************/
-void Enp2BlukIn()
+void Enp2BulkIn()
 {
     memcpy(Ep2Buffer + MAX_PACKET_SIZE, UserEp2Buf, sizeof(UserEp2Buf)); // ¼ÓÔØÉÏ´«Êı¾İ
     UEP2_T_LEN = THIS_ENDP0_SIZE;                                        // ÉÏ´«×î´ó°ü³¤¶È
@@ -370,7 +328,7 @@ void Enp2BlukIn()
 
 /*******************************************************************************
  * Function Name  : DeviceInterrupt()
- * Description    : CH559USBÖĞ¶Ï´¦Àíº¯Êı
+ * Description    : CH552USBÖĞ¶Ï´¦Àíº¯Êı
  *******************************************************************************/
 void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼Ä´æÆ÷×é1
 {
@@ -411,7 +369,8 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼
                 {
                     switch (SetupReq)
                     {
-                    case 0x01:                           // GetReport
+                    case 0x01: // GetReport
+
                         pDescr = UserEp2Buf;             // ¿ØÖÆ¶ËµãÉÏ´«Êä¾İ
                         if (SetupLen >= THIS_ENDP0_SIZE) // ´óÓÚ¶Ëµã0´óĞ¡£¬ĞèÒªÌØÊâ´¦Àí
                         {
@@ -424,13 +383,13 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼
                         break;
                     case 0x02: // GetIdle
                         break;
-                    case 0x03: // GetProtocol
+                    case 0x03: // GetProtocol only in boot device
                         break;
                     case 0x09: // SetReport
                         break;
                     case 0x0A: // SetIdle
                         break;
-                    case 0x0B: // SetProtocol
+                    case 0x0B: // SetProtocol only in boot device
                         break;
                     default:
                         len = 0xFF; /*ÃüÁî²»Ö§³Ö*/
@@ -457,7 +416,7 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼
                             len = sizeof(DevDesc);
                             break;
                         case 2:                // ÅäÖÃÃèÊö·û
-                            pDescr = &CfgDesc; // °ÑÉè±¸ÃèÊö·ûËÍµ½Òª·¢ËÍµÄ»º³åÇø
+                            pDescr = &CfgDesc; // °ÑÅäÖÃÃèÊö·ûËÍµ½Òª·¢ËÍµÄ»º³åÇø
                             len = sizeof(CfgDesc);
                             break;
                         case 3: // ×Ö·û´®ÃèÊö·û
@@ -532,9 +491,6 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼
                             case 0x82:
                                 UEP2_CTRL = UEP2_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
                                 break;
-                            case 0x81:
-                                UEP1_CTRL = UEP1_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
-                                break;
                             case 0x02:
                                 UEP2_CTRL = UEP2_CTRL & ~(bUEP_R_TOG | MASK_UEP_R_RES) | UEP_R_RES_ACK;
                                 break;
@@ -578,9 +534,6 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼
                                     break;
                                 case 0x02:
                                     UEP2_CTRL = UEP2_CTRL & (~bUEP_R_TOG) | UEP_R_RES_STALL; /* ÉèÖÃ¶Ëµã2 OUT Stall */
-                                    break;
-                                case 0x81:
-                                    UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL; /* ÉèÖÃ¶Ëµã1 IN STALL */
                                     break;
                                 default:
                                     len = 0xFF; /* ²Ù×÷Ê§°Ü */
@@ -639,7 +592,7 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖĞ¶Ï·şÎñ³ÌĞò,Ê¹ÓÃ¼
             switch (SetupReq)
             {
             case USB_GET_DESCRIPTOR:
-            case HID_GET_REPORT:
+                // case HID_GET_REPORT:
                 len = SetupLen >= THIS_ENDP0_SIZE ? THIS_ENDP0_SIZE : SetupLen; // ±¾´Î´«Êä³¤¶È
                 memcpy(Ep0Buffer, pDescr, len);                                 // ¼ÓÔØÉÏ´«Êı¾İ
                 SetupLen -= len;
@@ -724,7 +677,7 @@ main()
             while (Endp2Busy)
                 ; // Èç¹ûÃ¦£¨ÉÏÒ»°üÊı¾İÃ»ÓĞ´«ÉÏÈ¥£©£¬ÔòµÈ´ı¡£
             // Endp2Busy = 1; // ÉèÖÃÎªÃ¦×´Ì¬
-            // Enp2BlukIn();
+            // Enp2BulkIn();
             mDelaymS(100);
         }
         mDelaymS(100); // Ä£Äâµ¥Æ¬»ú×öÆäËüÊÂ

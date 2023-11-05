@@ -1,22 +1,7 @@
-#define HID_GET_REPORT 0x01
-#define HID_GET_IDLE 0x02
-#define HID_GET_PROTOCOL 0x03
-#define HID_SET_REPORT 0x09
-#define HID_SET_IDLE 0x0A
-#define HID_SET_PROTOCOL 0x0B
-
 // HID Request Type HID1.11 Page 51 7.2.1 Get_Report Request
 #define HID_REPORT_TYPE_INPUT 1
 #define HID_REPORT_TYPE_OUTPUT 2
 #define HID_REPORT_TYPE_FEATURE 3
-
-// #define HID_INTERFACE		(CDC_ACM_INTERFACE + CDC_INTERFACE_COUNT)		// HID Interface
-#define HID_FIRST_ENDPOINT 2
-#define HID_ENDPOINT_INT (HID_FIRST_ENDPOINT)
-#define HID_ENDPOINT_OUT (HID_FIRST_ENDPOINT + 1)
-
-// #define HID_TX HID_ENDPOINT_INT
-// #define HID_RX HID_ENDPOINT_OUT     //++ EP  HID_RX for ease of use with USB_Available & USB_Rec
 
 #define HID_PD_IPRODUCT 0x01     // FEATURE ONLY
 #define HID_PD_SERIAL 0x02       // FEATURE ONLY
