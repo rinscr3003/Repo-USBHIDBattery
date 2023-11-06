@@ -24,7 +24,7 @@ UINT8C CfgDesc[] =
         // 配置描述符
         0x09,       // 描述符大小
         0x02,       // 描述符类型（是配置描述符）
-        0x29, 0x00, // 配置总长度
+        0x1B, 0x00, // 配置总长度
         0x01,       // 配置接口数
         0x01,       // 配置值
         0x00,       // 配置字符串描述符索引
@@ -36,7 +36,7 @@ UINT8C CfgDesc[] =
         0x04, // 描述符类型（是接口描述符）
         0x00, // 接口编号
         0x00, // 接口替用设置（？）
-        0x01, // 扣除端点0后的端点数
+        0x00, // 扣除端点0后的端点数
         0x03, // 接口类（是HID）
         0x00, // 接口子类（是不支持引导服务的）
         0x00, // 不支持引导服务，此项无效
@@ -49,15 +49,7 @@ UINT8C CfgDesc[] =
         0x00,       // 国家代码
         0x01,       // 下挂HID描述符数量
         0x22,       // 下挂描述符1类型（是报表描述符）
-        0x61, 0x01, // 下挂描述符1长度
-
-        // 端点描述符
-        0x07,                // 描述符大小
-        0x05,                // 描述符类型（是端点描述符）
-        0x82,                // 端点号及输入输出信息（是EP2IN）
-        0x03,                // 端点传输类型（是中断传输）
-        ENDP2_IN_SIZE, 0x00, // 端点大小
-        0x01,                // 端点轮询间隔（是1帧）
+        0x43, 0x01, // 下挂描述符1长度
 };
 /*字符串描述符*/
 UINT8C LangDes[] = {
@@ -162,14 +154,6 @@ UINT8C HIDRepDesc[] = {
     0x09, 0x66,                     //     USAGE (RemainingCapacity)
     0xB1, 0xA3,                     //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
 
-    0x85, HID_PD_WARNCAPACITYLIMIT, //     REPORT_ID (15)
-    0x09, 0x8C,                     //     USAGE (WarningCapacityLimit)
-    0xB1, 0xA2,                     //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
-    0x85, HID_PD_REMNCAPACITYLIMIT, //     REPORT_ID (17)
-    0x09, 0x29,                     //     USAGE (RemainingCapacityLimit)
-    0xB1, 0xA2,                     //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
     0x85, HID_PD_AVERAGETIME2FULL, //     REPORT_ID (26)
     0x09, 0x6A,                    //     USAGE (AverageTimeToFull)
     0x75, 0x10,                    //     REPORT_SIZE (16)
@@ -190,18 +174,10 @@ UINT8C HIDRepDesc[] = {
     0x09, 0x68,                  //     USAGE (RunTimeToEmpty)
     0xB1, 0xA3,                  //     FEATURE (Constant, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
 
-    0x85, HID_PD_REMAINTIMELIMIT, //     REPORT_ID (8)
-    0x09, 0x2A,                   //     USAGE (RemainingTimeLimit)
-    0x75, 0x10,                   //     REPORT_SIZE (16)
-    0x27, 0x64, 0x05, 0x00, 0x00, //     LOGICAL_MAXIMUM (1380)
-    0x16, 0x78, 0x00,             //     LOGICAL_MINIMUM (120)
-    0x81, 0x22,                   //     INPUT (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Bitfield)
-    0x09, 0x2A,                   //     USAGE (RemainingTimeLimit)
-    0xB1, 0xA2,                   //     FEATURE (Data, Variable, Absolute, No Wrap, Linear, No Preferred, No Null Position, Volatile, Bitfield)
-
     0x05, 0x84,                   //     USAGE_PAGE (Power Device) ====================
     0x85, HID_PD_CONFIGVOLTAGE,   //     REPORT_ID (10)
     0x09, 0x40,                   //     USAGE (ConfigVoltage)
+    0x75, 0x10,                   //     REPORT_SIZE (16)
     0x15, 0x00,                   //     LOGICAL_MINIMUM (0)
     0x27, 0xFF, 0xFF, 0x00, 0x00, //     LOGICAL_MAXIMUM (65535)
     0x67, 0x21, 0xD1, 0xF0, 0x00, //     UNIT (Centivolts)
