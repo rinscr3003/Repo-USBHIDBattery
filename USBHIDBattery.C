@@ -6,8 +6,10 @@
 #include "HID_DEFINES.h"
 
 #define THIS_ENDP0_SIZE 64
+#define ENDP2_IN_SIZE 64
 
-UINT8X Ep0Buffer[MIN(64, THIS_ENDP0_SIZE + 2)] _at_ 0x0000; // ¶Ëµã0 OUT&IN»º³åÇø£¬±ØÐëÊÇÅ¼µØÖ·
+UINT8X Ep0Buffer[MIN(64, THIS_ENDP0_SIZE + 2)] _at_ 0x0000;                     // ¶Ëµã0 OUT&IN»º³åÇø£¬±ØÐëÊÇÅ¼µØÖ·
+UINT8X Ep2Buffer[MIN(64, ENDP2_IN_SIZE + 2)] _at_ MIN(64, THIS_ENDP0_SIZE + 2); // ¶Ëµã2 IN&OUT»º³åÇø,±ØÐëÊÇÅ¼µØÖ·
 
 UINT8 SetupReq, Ready, Count, FLAG, UsbConfig;
 UINT16 SetupLen;
@@ -19,7 +21,8 @@ USB_SETUP_REQ SetupReqBuf; // ÔÝ´æSetup°ü
 
 #include "USBDesc.h"
 
-UINT8X UserEpBuf[64] = {0x07, 0x01}; // ÓÃ»§Êý¾Ý¶¨Òå
+UINT8X UserEp2Buf[64] = {0x07, 0x0d, 0x00}; // ÓÃ»§Êý¾Ý¶¨Òå
+UINT8 Endp2Busy = 0;
 
 /*******************************************************************************
  * Function Name  : USBDeviceInit()
@@ -35,14 +38,30 @@ void USBDeviceInit()
     UDEV_CTRL = bUD_PD_DIS;      // ½ûÖ¹DP/DMÏÂÀ­µç×è
     UDEV_CTRL &= ~bUD_LOW_SPEED; // Ñ¡ÔñÈ«ËÙ12MÄ£Ê½£¬Ä¬ÈÏ·½Ê½
     USB_CTRL &= ~bUC_LOW_SPEED;
-    UEP0_DMA = Ep0Buffer;                       // ¶Ëµã0Êý¾Ý´«ÊäµØÖ·
-    UEP4_1_MOD &= ~(bUEP4_RX_EN | bUEP4_TX_EN); // ¶Ëµã0µ¥64×Ö½ÚÊÕ·¢»º³åÇø
+    UEP2_DMA = Ep2Buffer;                                   // ¶Ëµã2Êý¾Ý´«ÊäµØÖ·
+    UEP2_3_MOD = UEP2_3_MOD & ~bUEP2_BUF_MOD | bUEP2_TX_EN; // ¶Ëµã2·¢ËÍÊ¹ÄÜ 64×Ö½Ú»º³åÇø
+    UEP0_DMA = Ep0Buffer;                                   // ¶Ëµã0Êý¾Ý´«ÊäµØÖ·
+    UEP4_1_MOD &= ~(bUEP4_RX_EN | bUEP4_TX_EN);             // ¶Ëµã0µ¥64×Ö½ÚÊÕ·¢»º³åÇø
     USB_DEV_AD = 0x00;
     USB_CTRL |= bUC_DEV_PU_EN | bUC_INT_BUSY | bUC_DMA_EN; // Æô¶¯USBÉè±¸¼°DMA£¬ÔÚÖÐ¶ÏÆÚ¼äÖÐ¶Ï±êÖ¾Î´Çå³ýÇ°×Ô¶¯·µ»ØNAK
     UDEV_CTRL |= bUD_PORT_EN;                              // ÔÊÐíUSB¶Ë¿Ú
     USB_INT_FG = 0xFF;                                     // ÇåÖÐ¶Ï±êÖ¾
     USB_INT_EN = bUIE_SUSPEND | bUIE_TRANSFER | bUIE_BUS_RST;
     IE_USB = 1;
+}
+
+/*******************************************************************************
+ * Function Name  : Enp2IntIn()
+ * Description    : USBÉè±¸Ä£Ê½¶Ëµã2µÄÖÐ¶ÏÉÏ´«
+ * Input          : None
+ * Output         : None
+ * Return         : None
+ *******************************************************************************/
+void Enp2IntIn()
+{
+    memcpy(Ep2Buffer + MAX_PACKET_SIZE, UserEp2Buf, sizeof(UserEp2Buf)); // ¼ÓÔØÉÏ´«Êý¾Ý
+    UEP2_T_LEN = 3;                                                      // THIS_ENDP0_SIZE;                                        // ÉÏ´«×î´ó°ü³¤¶È
+    UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;             // ÓÐÊý¾ÝÊ±ÉÏ´«Êý¾Ý²¢Ó¦´ðACK
 }
 
 /*******************************************************************************
@@ -56,6 +75,12 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
     {
         switch (USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP))
         {
+        case UIS_TOKEN_IN | 2:       // endpoint 2# ¶ËµãÅúÁ¿ÉÏ´«
+            UEP2_T_LEN = 0;          // Ô¤Ê¹ÓÃ·¢ËÍ³¤¶ÈÒ»¶¨ÒªÇå¿Õ
+            UEP2_CTRL ^= bUEP_T_TOG; // ÊÖ¶¯·­×ª
+            Endp2Busy = 0;
+            UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK; // Ä¬ÈÏÓ¦´ðNAK
+            break;
         case UIS_TOKEN_SETUP | 0: // SETUPÊÂÎñ
             UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_ACK | UEP_T_RES_ACK;
             len = USB_RX_LEN;
@@ -69,16 +94,15 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                     switch (SetupReq)
                     {
                     case 0x01: // GetReport
-                        pDescr = UserEpBuf;             // ¿ØÖÆ¶ËµãÉÏ´«Êä¾Ý
-                        if (SetupLen >= THIS_ENDP0_SIZE) // ´óÓÚ¶Ëµã0´óÐ¡£¬ÐèÒªÌØÊâ´¦Àí
-                        {
-                            len = THIS_ENDP0_SIZE;
-                        }
-                        else
-                        {
-                            len = SetupLen;
-                        }
-                        len = 2;
+                        // pDescr = UserEp2Buf;             // ¿ØÖÆ¶ËµãÉÏ´«Êä¾Ý
+                        // if (SetupLen >= THIS_ENDP0_SIZE) // ´óÓÚ¶Ëµã0´óÐ¡£¬ÐèÒªÌØÊâ´¦Àí
+                        //{
+                        //    len = THIS_ENDP0_SIZE;
+                        //}
+                        // else
+                        //{
+                        //   len = SetupLen;
+                        //}
                         break;
                     case 0x02: // GetIdle
                         break;
@@ -187,6 +211,9 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                         {
                             switch (UsbSetupBuf->wIndexL)
                             {
+                            case 0x82:
+                                UEP2_CTRL = UEP2_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
+                                break;
                             default:
                                 len = 0xFF; // ²»Ö§³ÖµÄ¶Ëµã
                                 break;
@@ -222,6 +249,9 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
                             {
                                 switch (((UINT16)UsbSetupBuf->wIndexH << 8) | UsbSetupBuf->wIndexL)
                                 {
+                                case 0x82:
+                                    UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL; /* ÉèÖÃ¶Ëµã2 IN STALL */
+                                    break;
                                 default:
                                     len = 0xFF; /* ²Ù×÷Ê§°Ü */
                                     break;
@@ -320,9 +350,11 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USBÖÐ¶Ï·þÎñ³ÌÐò,Ê¹ÓÃ¼
     if (UIF_BUS_RST) // Éè±¸Ä£Ê½USB×ÜÏß¸´Î»ÖÐ¶Ï
     {
         UEP0_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
+        UEP2_CTRL = UEP_R_RES_ACK | UEP_T_RES_NAK;
         USB_DEV_AD = 0x00;
         UIF_SUSPEND = 0;
         UIF_TRANSFER = 0;
+        Endp2Busy = 0;
         UIF_BUS_RST = 0; // ÇåÖÐ¶Ï±êÖ¾
     }
     if (UIF_SUSPEND) // USB×ÜÏß¹ÒÆð/»½ÐÑÍê³É
@@ -344,14 +376,24 @@ main()
     // UINT8 i;
     CfgFsys();
     mDelaymS(5); // ÐÞ¸ÄÖ÷ÆµµÈ´ýÄÚ²¿¾§ÕñÎÈ¶¨,±Ø¼Ó
+    // mInitSTDIO( );                                                        //´®¿Ú0³õÊ¼»¯
+    // for (i = 0; i < 64; i++) // ×¼±¸ÑÝÊ¾Êý¾Ý
+    //{
+    //   UserEp2Buf[i] = i;
+    //}
     USBDeviceInit(); // USBÉè±¸Ä£Ê½³õÊ¼»¯
     EA = 1;          // ÔÊÐíµ¥Æ¬»úÖÐ¶Ï
+    UEP2_T_LEN = 0;  // Ô¤Ê¹ÓÃ·¢ËÍ³¤¶ÈÒ»¶¨ÒªÇå¿Õ
     FLAG = 0;
     Ready = 0;
     while (1)
     {
         if (Ready)
         {
+            while (Endp2Busy)
+                ;          // Èç¹ûÃ¦£¨ÉÏÒ»°üÊý¾ÝÃ»ÓÐ´«ÉÏÈ¥£©£¬ÔòµÈ´ý¡£
+            Endp2Busy = 1; // ÉèÖÃÎªÃ¦×´Ì¬
+            Enp2IntIn();
             mDelaymS(100);
         }
         mDelaymS(100); // Ä£Äâµ¥Æ¬»ú×öÆäËüÊÂ
