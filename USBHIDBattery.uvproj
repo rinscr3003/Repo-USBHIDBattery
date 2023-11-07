@@ -398,6 +398,31 @@
             </File>
           </Files>
         </Group>
+        <Group>
+          <GroupName>HwDrv</GroupName>
+          <Files>
+            <File>
+              <FileName>ch55x_soft_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HwDrv\ch55x_soft_i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>ch55x_soft_i2c.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\HwDrv\ch55x_soft_i2c.h</FilePath>
+            </File>
+            <File>
+              <FileName>bq4050.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HwDrv\bq4050.c</FilePath>
+            </File>
+            <File>
+              <FileName>bq4050.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\HwDrv\bq4050.h</FilePath>
+            </File>
+          </Files>
+        </Group>
       </Groups>
     </Target>
   </Targets>

@@ -2,6 +2,8 @@
 #include "./Lib/Debug.H"
 #include <stdio.h>
 #include <string.h>
+#include "./HwDrv/ch55x_soft_i2c.h"
+#include "./HwDrv/bq4050.h"
 
 #include "HID_DEFINES.h"
 
@@ -16,6 +18,19 @@ USB_SETUP_REQ SetupReqBuf; // ‘›¥ÊSetup∞¸
 #define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer)
 
 #pragma NOAREGS
+
+/*******************************************************************************
+* Function Name  : Port1Cfg()
+* Description    : ∂Àø⁄1≈‰÷√
+* Input          : Mode  0 = ∏°ø’ ‰»Î£¨Œﬁ…œ¿≠
+                         1 = Õ∆ÕÏ ‰»Î ‰≥ˆ
+                         2 = ø™¬© ‰»Î ‰≥ˆ£¨Œﬁ…œ¿≠
+                         3 = ¿‡51ƒ£ Ω£¨ø™¬© ‰»Î ‰≥ˆ£¨”–…œ¿≠£¨ƒ⁄≤øµÁ¬∑ø…“‘º”ÀŸ”…µÕµΩ∏ﬂµƒµÁ∆Ω≈¿…˝
+                   ,UINT8 Pin	(0-7)
+* Output         : None
+* Return         : None
+*******************************************************************************/
+extern void Port1Cfg(UINT8 Mode, UINT8 Pin);
 
 #include "USBDesc.h"
 
@@ -62,7 +77,7 @@ volatile UINT16X averageToFull = 0x0;
 volatile UINT16X designVolt = 1110;
 volatile UINT16X currentVolt = 1110;
 UINT8XV batteryHealth = 100;
-UINT8XV batteryRSOC = 76;
+UINT8XV batteryRSOC = 44;
 
 /*******************************************************************************
  * Function Name  : DeviceInterrupt()
@@ -411,6 +426,8 @@ void DeviceInterrupt(void) interrupt INT_NO_USB using 1 // USB÷–∂œ∑˛ŒÒ≥Ã–Ú, π”√º
     }
 }
 
+sbit PIN_LED = P1 ^ 5;
+
 main()
 {
     CfgFsys();
@@ -420,6 +437,20 @@ main()
     UEP2_T_LEN = 0;  // ‘§ π”√∑¢ÀÕ≥§∂»“ª∂®“™«Âø’
     FLAG = 0;
     Ready = 0;
+    Port1Cfg(1, 5);
+    bq_Init();
+    if (!bq_testComm())
+    {
+        mDelaymS(500);
+        while (!bq_testComm())
+        {
+            swi2c_bus_reset();
+            mDelaymS(500);
+            PIN_LED = !(PIN_LED);
+        }
+    }
+    PIN_LED = 0;
+
     while (1)
     {
         if (Ready)
